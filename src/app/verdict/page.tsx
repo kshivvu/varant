@@ -352,7 +352,7 @@ export default function VerdictScreen() {
               The Sabha&apos;s Final Nirnaya
             </span>
             <p className="text-4xl md:text-5xl lg:text-5xl font-[family-name:var(--font-display)] text-[#1A1A1A] leading-[1.2] tracking-tight">
-              "{question}"
+              &quot;{question}&quot;
             </p>
           </div>
 
@@ -471,31 +471,34 @@ export default function VerdictScreen() {
             />
           )}
           {/* Actions */}
-          <div className="flex justify-center gap-4 mt-16 mb-24 gs-actions w-full">
-            <button
-              onClick={copyToClipboard}
-              className="btn-secondary px-8 py-4"
-            >
-              {copied ? "✓ Copied" : "📋 Copy Shastra"}
-            </button>
+          <div className="flex flex-col items-center gap-6 mt-16 mb-24 gs-actions w-full">
+            <div className="flex flex-wrap justify-center gap-4">
+              <button
+                onClick={copyToClipboard}
+                className="border border-[#E8E3DC] text-[#1A1510] px-6 py-3 rounded-full text-[14px] font-medium hover:border-[#D97706]/40 transition-all"
+              >
+                {copied ? "✓ Copied" : "📋 Copy Shastra"}
+              </button>
+
+              <button
+                onClick={() =>
+                  exportShastra(question, verdict, verdict.confidence)
+                }
+                className="border border-[#E8E3DC] text-[#1A1510] px-6 py-3 rounded-full text-[14px] font-medium hover:border-[#D97706]/40 transition-all"
+              >
+                📜 Export Shastra
+              </button>
+              <Link
+                href="/smriti"
+                className="border border-[#E8E3DC] text-[#1A1510] px-6 py-3 rounded-full text-[14px] font-medium hover:border-[#D97706]/40 transition-all flex items-center justify-center"
+              >
+                📖 View your Smriti
+              </Link>
+            </div>
 
             <button
-              onClick={() =>
-                exportShastra(question, verdict, verdict.confidence)
-              }
-              className="border border-[#E8E3DC] text-[#1A1510] px-6 py-3 rounded-full text-[14px] font-medium hover:border-[#D97706]/40 transition-all"
-            >
-              📜 Export Shastra
-            </button>
-            <Link
-              href="/smriti"
-              className="text-[13px] text-[#A0998F] hover:text-[#9B1C1C] transition-colors"
-            >
-              View your Smriti →
-            </Link>
-            <button
               onClick={startNew}
-              className="btn-primary px-8 py-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
+              className="btn-primary px-8 py-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.18)] mt-2"
             >
               Begin a New Vichar →
             </button>

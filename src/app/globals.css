@@ -20,6 +20,7 @@
   --animate-pulse-ring: pulse-ring 2s ease-in-out infinite;
   --animate-bar-fill: bar-fill 1.2s cubic-bezier(0.4, 0.0, 0.2, 1) 0.3s both;
   --animate-hero-breathe: hero-breathe 8s ease-in-out infinite alternate;
+  --animate-marquee: marquee 30s linear infinite;
 }
 
 :root {
@@ -305,6 +306,15 @@
 
   50% {
     box-shadow: 0 0 0 6px rgba(232, 113, 26, 0);
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
   }
 }
 

@@ -163,9 +163,9 @@ export async function POST(req: NextRequest) {
       const persona = PERSONAS.find((p) => p.id === personaId);
       const result = await callOpenRouter(
         "google/gemini-2.5-flash-lite",
-        "You are a highly concise, decision-focused summarizer. Distill the given text to the absolute core argument for efficient decision-making. Highlight the main points using **bold text**. Keep the voice and perspective of the original speaker. No preamble.",
-        `Summarize this response from ${persona?.name || personaId} extremely concisely, highlighting the main points in bold to help me decide:\n\n${content}`,
-        100,
+        `You are a razor-sharp summarizer. Your job is to compress a thinker's response into 2-3 punchy sentences that capture their core stance and reasoning — nothing more. Rules: use **bold** for the single most critical insight only. No filler, no preamble, no "In summary". Write in the speaker's voice. Always write complete sentences — never cut off.`,
+        `Compress this response from ${persona?.name || personaId} into 2-3 complete sentences. Bold only the sharpest insight:\n\n${content}`,
+        200,
       );
       return NextResponse.json({ summary: result.trim() });
     }
