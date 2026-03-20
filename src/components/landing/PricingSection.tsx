@@ -7,7 +7,7 @@ const PricingSection = () => {
     <section
       id="pricing"
       className="relative z-10 py-32 px-6 v-section"
-      style={{ background: '#FAF9F7', borderY: '1px solid rgba(26, 21, 16, 0.05)' }}
+      style={{ background: '#FAF9F7', borderTop: '1px solid rgba(26, 21, 16, 0.05)', borderBottom: '1px solid rgba(26, 21, 16, 0.05)' }}
     >
       <div className="container mx-auto max-w-7xl">
         {/* Header */}
