@@ -14,7 +14,6 @@ import InterruptionModal from "@/components/InterruptionModal";
 import jsPDF from "jspdf";
 
 async function exportShastra(
-
   question: string,
   verdict: VerdictData,
   matraScore: number,
@@ -112,7 +111,6 @@ function parseVerdict(raw: string): VerdictData {
 }
 
 export default function VerdictScreen() {
-
   const [showContinue, setShowContinue] = useState(false);
   const [continueContext, setContinueContext] = useState("");
   const [unseenQuestions, setUnseenQuestions] = useState<string[]>([]);

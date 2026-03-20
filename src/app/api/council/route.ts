@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
       const persona = PERSONAS.find((p) => p.id === personaId);
       const result = await callOpenRouter(
         "google/gemini-2.5-flash-lite",
-        `You are a razor-sharp summarizer. Your job is to compress a thinker's response into 2-3 punchy sentences that capture their core stance and reasoning — nothing more. Rules: use **bold** for the single most critical insight only. No filler, no preamble, no "In summary". Write in the speaker's voice. Always write complete sentences — never cut off.`,
+         `You are a razor-sharp summarizer. Your job is to compress a thinker's response into 2-3 punchy sentences that capture their core stance and reasoning — nothing more. Rules: use **bold** for the single most critical insight only. No filler, no preamble, no "In summary". Write in the speaker's voice. Always write complete sentences — never cut off.`,
         `Compress this response from ${persona?.name || personaId} into 2-3 complete sentences. Bold only the sharpest insight:\n\n${content}`,
         200,
       );
