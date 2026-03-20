@@ -16,6 +16,7 @@ import {
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import PricingSection from "@/components/landing/PricingSection";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -51,7 +52,7 @@ export default function VarantLandingPage() {
       const sections = document.querySelectorAll(".v-section");
       sections.forEach((section) => {
         gsap.fromTo(
-          section.querySelectorAll(".v-slide-up"),
+          section.querySelectorAll(".v-slide-up, .reveal"),
           { y: 40, opacity: 0 },
           {
             y: 0,
@@ -62,6 +63,25 @@ export default function VarantLandingPage() {
             scrollTrigger: {
               trigger: section,
               start: "top 85%",
+            },
+          },
+        );
+      });
+
+      // Generic Reveal for elements
+      const reveals = document.querySelectorAll(".reveal");
+      reveals.forEach((el) => {
+        gsap.fromTo(
+          el,
+          { y: 40, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 1,
+            ease: "power2.out",
+            scrollTrigger: {
+              trigger: el,
+              start: "top 90%",
             },
           },
         );
@@ -114,10 +134,10 @@ export default function VarantLandingPage() {
               The Sabha
             </button>
             <button
-              onClick={() => scrollTo("platform")}
+              onClick={() => scrollTo("pricing")}
               className="text-xs font-semibold uppercase tracking-[0.15em] text-[#767676] hover:text-[#1A1510] transition-colors"
             >
-              Platform
+              Pricing
             </button>
           </div>
 
@@ -726,6 +746,8 @@ export default function VarantLandingPage() {
         </div>
       </section>
 
+      <PricingSection />
+
       {/* ─── CTA ─── */}
       <section className="relative z-10 bg-[#1A1510] text-[#E8E3DC] py-40 px-6 text-center v-section">
         <div className="max-w-4xl mx-auto">
@@ -774,10 +796,27 @@ export default function VarantLandingPage() {
 
           <div className="flex flex-wrap gap-16 md:gap-24">
             <div className="flex flex-col gap-4">
-              <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#1A1510] mb-2">Navigate</h4>
-              <button onClick={() => scrollTo('philosophy')} className="text-sm text-[#666] hover:text-[#9B1C1C] transition-colors text-left">Philosophy</button>
-              <button onClick={() => scrollTo('architecture')} className="text-sm text-[#666] hover:text-[#9B1C1C] transition-colors text-left">The Council</button>
-              <button onClick={() => scrollTo('platform')} className="text-sm text-[#666] hover:text-[#9B1C1C] transition-colors text-left">Process</button>
+              <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#1A1510] mb-2">
+                Navigate
+              </h4>
+              <button
+                onClick={() => scrollTo("philosophy")}
+                className="text-sm text-[#666] hover:text-[#9B1C1C] transition-colors text-left"
+              >
+                Philosophy
+              </button>
+              <button
+                onClick={() => scrollTo("architecture")}
+                className="text-sm text-[#666] hover:text-[#9B1C1C] transition-colors text-left"
+              >
+                The Council
+              </button>
+              <button
+                onClick={() => scrollTo("platform")}
+                className="text-sm text-[#666] hover:text-[#9B1C1C] transition-colors text-left"
+              >
+                Process
+              </button>
             </div>
             <div className="flex flex-col gap-4">
               <h4 className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#1A1510] mb-2">
@@ -789,12 +828,12 @@ export default function VarantLandingPage() {
               >
                 Run Simulation
               </Link>
-              <Link
-                href="#"
-                className="text-sm text-[#666] hover:text-[#9B1C1C] transition-colors"
+              <button
+                onClick={() => scrollTo("pricing")}
+                className="text-sm text-[#666] hover:text-[#9B1C1C] transition-colors text-left"
               >
-                Pricing (Free Beta)
-              </Link>
+                Pricing
+              </button>
               <Link
                 href="#"
                 className="text-sm text-[#666] hover:text-[#9B1C1C] transition-colors"

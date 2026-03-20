@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
-import { CheckCircle2, Zap, Search, Target } from "lucide-react";
+import { CheckCircle2, Zap, Search, Target, ArrowRight } from "lucide-react";
 import VerdictCard, { ConfidenceBar } from "@/components/VerdictCard";
 import { VerdictData } from "@/types/council";
 import { useChime } from "@/hooks/useChime";
@@ -350,7 +350,7 @@ export default function VerdictScreen() {
               The Sabha&apos;s Final Nirnaya
             </span>
             <p className="text-4xl md:text-5xl lg:text-5xl font-[family-name:var(--font-display)] text-[#1A1A1A] leading-[1.2] tracking-tight">
-              "{question}"
+              &ldquo;{question}&rdquo;
             </p>
           </div>
 
@@ -411,29 +411,29 @@ export default function VerdictScreen() {
             <div className="flex justify-center mt-8">
               <button
                 onClick={() => setShowContinue(true)}
-                className="text-[13px] font-medium text-[#78716c] border border-[#E8E3DC] px-6 py-2.5 rounded-full hover:border-[#D97706]/40 hover:text-[#1A1510] transition-all"
+                className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#767676] border border-[#E8E3DC] px-8 py-3 rounded-full hover:border-[#D97706]/40 hover:text-[#1A1510] transition-all bg-white/50 backdrop-blur-sm shadow-sm"
               >
                 ↩ Continue this Vichar
               </button>
             </div>
           ) : (
             <div className="max-w-2xl mx-auto mt-10 space-y-4">
-              <div className="varant-council-card rounded-2xl p-6">
-                <p className="text-[11px] font-semibold text-[#78716c] uppercase tracking-widest mb-3">
+              <div className="varant-council-card rounded-2xl p-8 border border-[#E8E3DC] shadow-lg">
+                <p className="text-[10px] font-bold text-[#9B1C1C] uppercase tracking-[0.2em] mb-4">
                   विचार जारी · Continue the Vichar
                 </p>
-                <p className="text-[13px] text-[#57534E] mb-4">
+                <p className="text-[14px] text-[#57534E] mb-6 leading-relaxed">
                   Add new context, constraints, or information. The Sabha will
                   reconvene with the previous Nirnaya as foundation — and The
                   Unseen questions will be asked before it begins.
                 </p>
                 <textarea
-                  className="w-full text-[14px] p-4 border border-[#E8E3DC] rounded-xl bg-white/80 resize-none focus:outline-none focus:border-[#D97706]/50 min-h-[100px]"
+                  className="w-full text-[14px] p-5 border border-[#E8E3DC] rounded-xl bg-white/90 resize-none focus:outline-none focus:border-[#D97706]/50 min-h-[120px] shadow-inner transition-all focus:ring-2 focus:ring-[#D97706]/10"
                   placeholder="What's changed? New constraints, new information, a decision you've already made..."
                   value={continueContext}
                   onChange={(e) => setContinueContext(e.target.value)}
                 />
-                <div className="flex gap-3 mt-4">
+                <div className="flex gap-4 mt-6">
                   <button
                     onClick={async () => {
                       setContinuationLoading(true);
@@ -441,7 +441,7 @@ export default function VerdictScreen() {
                       setContinuationLoading(false);
                     }}
                     disabled={continuationLoading}
-                    className="bg-[#1A1510] text-white px-6 py-2.5 rounded-full text-[13px] font-semibold hover:bg-[#9B1C1C] transition-colors flex items-center gap-2 disabled:opacity-50"
+                    className="bg-[#1A1510] text-white px-8 py-3.5 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#9B1C1C] transition-all flex items-center gap-3 disabled:opacity-50 shadow-md hover:shadow-lg active:scale-95"
                   >
                     <span className="text-[#D97706]">⚖</span>
                     {continuationLoading
@@ -450,7 +450,7 @@ export default function VerdictScreen() {
                   </button>
                   <button
                     onClick={() => setShowContinue(false)}
-                    className="text-[13px] text-[#A0998F] px-4 py-2.5 rounded-full hover:bg-[#F5F2EE] transition-colors"
+                    className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#A0998F] px-6 py-3.5 rounded-full hover:bg-[#F5F2EE] transition-colors"
                   >
                     Cancel
                   </button>
@@ -469,10 +469,10 @@ export default function VerdictScreen() {
             />
           )}
           {/* Actions */}
-          <div className="flex justify-center gap-4 mt-16 mb-24 gs-actions w-full">
+          <div className="flex flex-wrap justify-center items-center gap-6 mt-20 mb-32 gs-actions w-full">
             <button
               onClick={copyToClipboard}
-              className="btn-secondary px-8 py-4"
+              className="bg-white text-[#1A1510] border border-[#E8E3DC] px-8 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:border-[#D97706]/40 transition-all shadow-sm hover:shadow-md flex items-center gap-2"
             >
               {copied ? "✓ Copied" : "📋 Copy Shastra"}
             </button>
@@ -481,21 +481,25 @@ export default function VerdictScreen() {
               onClick={() =>
                 exportShastra(question, verdict, verdict.confidence)
               }
-              className="border border-[#E8E3DC] text-[#1A1510] px-6 py-3 rounded-full text-[14px] font-medium hover:border-[#D97706]/40 transition-all"
+              className="bg-white text-[#1A1510] border border-[#E8E3DC] px-8 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:border-[#D97706]/40 transition-all shadow-sm hover:shadow-md flex items-center gap-2"
             >
               📜 Export Shastra
             </button>
+
+            <div className="w-px h-8 bg-[#E8E3DC] hidden md:block mx-2" />
+
             <Link
               href="/smriti"
-              className="text-[13px] text-[#A0998F] hover:text-[#9B1C1C] transition-colors"
+              className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#767676] hover:text-[#9B1C1C] transition-colors"
             >
-              View your Smriti →
+              View Smriti →
             </Link>
+
             <button
               onClick={startNew}
-              className="btn-primary px-8 py-4 shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:-translate-y-1 hover:shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
+              className="bg-[#1A1510] text-white px-10 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#9B1C1C] transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
             >
-              Begin a New Vichar →
+              Begin New Vichar <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
+import Link from "next/link";
 import PersonaCard from "@/components/PersonaCard";
 import RoundProgress from "@/components/RoundProgress";
 import InterjectionBar from "@/components/InterjectionBar";
@@ -560,7 +561,7 @@ export default function CouncilScreen() {
           ref={headerRef}
         >
           <div className="bg-white/90 backdrop-blur-xl border border-[#E8E3DC]/80 rounded-full px-5 py-2.5 shadow-[0_2px_12px_rgba(0,0,0,0.04)] flex items-center justify-between gap-8 pointer-events-auto min-w-0 max-w-2xl w-full">
-            <a
+            <Link
               href="/"
               className="text-[15px] font-semibold tracking-[-0.01em] text-[#1A1510] shrink-0"
             >
@@ -568,7 +569,7 @@ export default function CouncilScreen() {
                 v
               </span>
               arant
-            </a>
+            </Link>
             <RoundProgress currentRound={currentRound} />
           </div>
         </div>
@@ -633,10 +634,10 @@ export default function CouncilScreen() {
               <button
                 onClick={runRound2}
                 disabled={isProcessing}
-                className="bg-[#1A1510] text-white px-8 py-3.5 rounded-full text-[14px] font-medium hover:bg-[#9B1C1C] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2"
+                className="bg-[#1A1510] text-white px-10 py-4 rounded-full text-[11px] font-bold uppercase tracking-[0.15em] hover:bg-[#9B1C1C] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-3 shadow-lg hover:shadow-xl active:scale-95"
               >
                 Proceed to Khandana
-                <span className="text-[#D97706]">→</span>
+                <span className="text-[#D97706] text-lg">→</span>
               </button>
             </div>
           )}
@@ -647,9 +648,9 @@ export default function CouncilScreen() {
               <button
                 onClick={runVerdict}
                 disabled={isProcessing}
-                className="bg-white/90 backdrop-blur-md text-[#1A1510] border border-[#E8E3DC] rounded-full px-8 py-3.5 text-[14px] font-semibold shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_20px_rgba(155,28,28,0.08)] hover:border-[#9B1C1C]/20 transition-all duration-200 flex items-center justify-center gap-2"
+                className="bg-white text-[#1A1510] border border-[#E8E3DC] rounded-full px-10 py-4 text-[11px] font-bold uppercase tracking-[0.15em] shadow-md hover:shadow-lg hover:border-[#9B1C1C]/20 transition-all duration-300 flex items-center justify-center gap-3 active:scale-95"
               >
-                <span className="w-2 h-2 rounded-full bg-[#D97706]" />
+                <span className="w-2 h-2 rounded-full bg-[#D97706] animate-pulse" />
                 Render the Nirnaya
               </button>
             </div>
