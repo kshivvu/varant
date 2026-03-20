@@ -23,8 +23,7 @@ if (typeof window !== "undefined") {
 
 export default function VarantLandingPage() {
   const containerRef = useRef<HTMLDivElement>(null);
-<<<<<<< HEAD
-  const { isSignedIn } = useAuth();
+  const isSignedIn = useAuth()
   useGSAP(
     () => {
       // Hero Entrance
@@ -48,32 +47,6 @@ export default function VarantLandingPage() {
           "-=1.0",
         );
 
-=======
-
-  useGSAP(
-    () => {
-      // Hero Entrance
-      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-      tl.to(".v-curtain", {
-        height: 0,
-        duration: 1.2,
-        ease: "power4.inOut",
-        stagger: 0.1,
-      })
-        .fromTo(
-          ".v-fade-in",
-          { y: 20, opacity: 0 },
-          { y: 0, opacity: 1, duration: 1.2, stagger: 0.15 },
-          "-=0.6",
-        )
-        .fromTo(
-          ".v-glass-pill",
-          { scale: 0.95, opacity: 0 },
-          { scale: 1, opacity: 1, duration: 0.8, stagger: 0.08 },
-          "-=1.0",
-        );
-
->>>>>>> e23782072e5b54f4a7630ba4dc6ed7063bb9e2ed
       // Scroll Animations
       const sections = document.querySelectorAll(".v-section");
       sections.forEach((section) => {
@@ -149,7 +122,6 @@ export default function VarantLandingPage() {
           </div>
 
           <div className="flex items-center gap-4">
-<<<<<<< HEAD
             {isSignedIn ? (
               <UserButton />
             ) : (
@@ -159,8 +131,6 @@ export default function VarantLandingPage() {
                 </button>
               </SignInButton>
             )}
-=======
->>>>>>> e23782072e5b54f4a7630ba4dc6ed7063bb9e2ed
             <Link
               href="/demo"
               className="bg-[#1A1510] text-white text-xs font-semibold tracking-[0.1em] uppercase px-5 py-2.5 rounded-full hover:bg-[#9B1C1C] transition-colors block"
@@ -249,15 +219,9 @@ export default function VarantLandingPage() {
       </section>
 
       {/* ─── MARQUEE ─── */}
-<<<<<<< HEAD
-      <div className="relative z-10 overflow-hidden py-5 border-y border-[#1A1510]/10 bg-[#FAF9F7]">
-        <div className="flex whitespace-nowrap animate-marquee">
-          {[...Array(3)].map((_, i) => (
-=======
       <div className="relative z-10 overflow-hidden py-5 border-y border-[#1A1510]/10 bg-[#FAF9F7] mt-12 md:mt-20">
         <div className="flex whitespace-nowrap animate-marquee w-max">
           {[...Array(6)].map((_, i) => (
->>>>>>> e23782072e5b54f4a7630ba4dc6ed7063bb9e2ed
             <span
               key={i}
               className="text-[11px] font-semibold uppercase tracking-[0.3em] text-[#1A1510]/30 mx-4"
