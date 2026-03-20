@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import { ShieldAlert, Sparkles, Anchor, Shuffle } from 'lucide-react';
 import { Persona, PersonaResponse, PersonaStatus, PersonaId } from '@/types/council';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
@@ -51,14 +54,44 @@ function getSourceDotColor(sourceName: string): string {
 }
 
 export default function PersonaCard({ persona, response, status }: PersonaCardProps) {
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
   const effectiveStatus = status || response?.status || (response?.loading ? 'speaking' : response?.content ? 'done' : 'waiting');
   const isSpeaking = effectiveStatus === 'speaking';
   const isWaiting = effectiveStatus === 'waiting';
+  const isDone = effectiveStatus === 'done';
   const hasContent = !!response?.content;
   const hasError = !!response?.error;
 
   const color = accentHex[persona.color] || '#1A1510';
   const { quote, source, body } = hasContent ? parseRebuttal(response!.content) : { quote: null, source: null, body: '' };
+
+  // Auto-fetch summary when done
+  useEffect(() => {
+    if (!isDone || !hasContent || summary || summaryLoading) return;
+
+    setSummaryLoading(true);
+    fetch('/api/council', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'summary',
+        question: '',
+        personaId: persona.id,
+        content: response!.content,
+      }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        setSummary(data.summary || null);
+        setSummaryLoading(false);
+      })
+      .catch(() => {
+        setSummaryLoading(false);
+      });
+  }, [isDone, hasContent]);
 
   return (
     <div
@@ -66,14 +99,14 @@ export default function PersonaCard({ persona, response, status }: PersonaCardPr
         isSpeaking ? 'varant-persona-card-speaking' : ''
       } ${isWaiting && !hasContent ? 'opacity-55' : ''}`}
     >
-      {/* Left accent — persona color */}
+      {/* Left accent */}
       <div
         className="absolute left-0 top-0 bottom-0 w-1"
         style={{ background: `linear-gradient(180deg, ${color}, ${color}88)`, opacity: isSpeaking ? 1 : 0.6 }}
       />
 
       <div className="flex-1 flex flex-col pl-2 min-w-0">
-        {/* Header — who is speaking */}
+        {/* Header */}
         <div className="flex items-center gap-3 px-4 pt-3 pb-2">
           <div
             className="flex items-center justify-center w-10 h-10 rounded-full shrink-0"
@@ -100,23 +133,18 @@ export default function PersonaCard({ persona, response, status }: PersonaCardPr
           </div>
         </div>
 
-        {/* Body — conversational content */}
+        {/* Body */}
         <div className="flex-1 px-4 pb-4 flex flex-col min-h-0">
           {isWaiting && !hasContent && !hasError && (
             <div className="flex-1 flex items-center justify-center py-6">
-              <p className="text-[12px] text-[#a8a29e] italic">
-                Waiting for my turn to speak...
-              </p>
+              <p className="text-[12px] text-[#a8a29e] italic">Waiting for my turn to speak...</p>
             </div>
           )}
 
           {isSpeaking && !hasContent && (
             <div className="flex-1 flex flex-col justify-center gap-3 py-2">
               <div className="flex items-center gap-2">
-                <span
-                  className="w-2 h-2 rounded-full animate-pulse"
-                  style={{ backgroundColor: color }}
-                />
+                <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: color }} />
                 <span className="text-[12px] text-[#78716c] italic">Gathering my thoughts...</span>
               </div>
               <div className="space-y-2 mt-2">
@@ -134,7 +162,8 @@ export default function PersonaCard({ persona, response, status }: PersonaCardPr
           )}
 
           {hasContent && (
-            <div className="space-y-4">
+            <div className="space-y-3">
+              {/* Rebuttal quote block */}
               {quote && source && (
                 <div
                   className="pl-4 py-2.5 border-l-2 rounded-r-md"
@@ -146,26 +175,63 @@ export default function PersonaCard({ persona, response, status }: PersonaCardPr
                   <p className="text-[13px] font-[family-name:var(--font-lora)] italic text-[#44403c] leading-relaxed">
                     &ldquo;{quote}&rdquo;
                   </p>
-                  <p className="text-[11px] text-[#78716c] mt-2 font-medium">
-                    So I say —
-                  </p>
+                  <p className="text-[11px] text-[#78716c] mt-2 font-medium">So I say —</p>
                 </div>
               )}
-              <div className="prose-quorum text-[14px] leading-relaxed text-[#44403c]">
-                <MarkdownRenderer content={quote ? body : response!.content} />
-                {isSpeaking && (
-                  <span
-                    className="inline-block w-2 h-4 ml-0.5 align-middle animate-pulse rounded-sm"
-                    style={{ backgroundColor: color }}
-                  />
-                )}
-              </div>
+
+              {/* Summary loading state */}
+              {summaryLoading && (
+                <div className="flex items-center gap-2 py-2">
+                  <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: color }} />
+                  <span className="text-[11px] text-[#a8a29e] italic tracking-wide">Rendering summary...</span>
+                </div>
+              )}
+
+              {/* Summary view (default when done) */}
+              {!summaryLoading && summary && !expanded && (
+                <div className="space-y-2">
+                  <div className="prose-quorum text-[14px] leading-relaxed text-[#44403c]">
+                    <MarkdownRenderer content={summary} />
+                  </div>
+                  <button
+                    onClick={() => setExpanded(true)}
+                    className="text-[11px] font-medium mt-1 hover:underline transition-colors"
+                    style={{ color }}
+                  >
+                    Show full response ↓
+                  </button>
+                </div>
+              )}
+
+              {/* Full response view */}
+              {(!summary || expanded) && !summaryLoading && (
+                <div className="space-y-2">
+                  <div className="prose-quorum text-[14px] leading-relaxed text-[#44403c]">
+                    <MarkdownRenderer content={quote ? body : response!.content} />
+                    {isSpeaking && (
+                      <span
+                        className="inline-block w-2 h-4 ml-0.5 align-middle animate-pulse rounded-sm"
+                        style={{ backgroundColor: color }}
+                      />
+                    )}
+                  </div>
+                  {summary && expanded && (
+                    <button
+                      onClick={() => setExpanded(false)}
+                      className="text-[11px] font-medium mt-1 hover:underline transition-colors"
+                      style={{ color }}
+                    >
+                      Show summary ↑
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Bottom decorative line */}
+      {/* Bottom line */}
       <div
         className="h-0.5 w-full"
         style={{ background: `linear-gradient(90deg, transparent, ${color}30, transparent)` }}

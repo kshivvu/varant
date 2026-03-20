@@ -94,7 +94,7 @@ export default function VarantLandingPage() {
           </div>
 
           {/* Hero Content */}
-          <div className="relative z-10 w-full h-full flex flex-col items-center justify-end text-center pb-20 md:pb-32 px-6">
+          <div className="relative z-10 w-full h-full flex flex-col mt-25 items-center justify-end text-center pb-20 md:pb-32 px-6">
             <div className="mb-8 v-fade-in inline-flex items-center gap-3">
               <span className="h-px w-8 bg-gradient-to-r from-transparent to-[#D97706]/70"></span>
               <span className="text-[10px] font-semibold tracking-[0.25em] text-[#E8E3DC] border border-[#D97706]/30 bg-[#1A1510]/60 backdrop-blur-md px-4 py-1.5 rounded-full uppercase">
@@ -103,7 +103,7 @@ export default function VarantLandingPage() {
               <span className="h-px w-8 bg-gradient-to-l from-transparent to-[#D97706]/70"></span>
             </div>
 
-            <h1 className="font-[family-name:var(--font-display)] text-5xl md:text-[84px] leading-[1.05] tracking-[-0.02em] text-white max-w-[900px] mb-8 text-shadow-sm v-fade-in">
+            <h1 className="font-[family-name:var(--font-display)] text-5xl md:text-[84px] leading-[1.05] tracking-[-0.02em] text-white max-w-[900px] mb-8 text-shadow-sm v-fade-in ">
               What bet can&apos;t <br/>
               <span className="italic font-light text-white/90">you undo?</span>
             </h1>

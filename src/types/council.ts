@@ -2,8 +2,7 @@ export type PersonaId = 'skeptic' | 'optimist' | 'pragmatist' | 'devils-advocate
 
 export type PersonaStatus = 'waiting' | 'speaking' | 'done';
 
-export type CouncilRequestType = 'persona' | 'interruption_question' | 'tension_score' | 'verdict';
-
+export type CouncilRequestType = 'persona' | 'interruption_question' | 'tension_score' | 'verdict' | 'summary' | 'unseen_questions';
 export interface Persona {
     id: PersonaId;
     name: string;
@@ -49,6 +48,7 @@ export interface CouncilRequest {
     personaId?: PersonaId;
     previousResponses?: { personaId: PersonaId; round: Round; content: string }[];
     interjection?: string;
+    content?: string; 
 }
 
 export interface CouncilResponse {

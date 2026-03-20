@@ -1,8 +1,8 @@
-import { useState } from 'react';
-import { Persona, PersonaId } from '@/types/council';
-import { PERSONAS } from '@/lib/prompts';
-import { ShieldAlert, Sparkles, Anchor, Shuffle } from 'lucide-react';
-import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { useState } from "react";
+import { Persona, PersonaId } from "@/types/council";
+import { PERSONAS } from "@/lib/prompts";
+import { ShieldAlert, Sparkles, Anchor, Shuffle } from "lucide-react";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 interface InterruptionModalProps {
   personaId: PersonaId;
@@ -15,11 +15,16 @@ const personaIcons: Record<PersonaId, React.ReactNode> = {
   skeptic: <ShieldAlert className="w-4 h-4" />,
   optimist: <Sparkles className="w-4 h-4" />,
   pragmatist: <Anchor className="w-4 h-4" />,
-  'devils-advocate': <Shuffle className="w-4 h-4" />,
+  "devils-advocate": <Shuffle className="w-4 h-4" />,
 };
 
-export default function InterruptionModal({ personaId, question, onAnswer, onSkip }: InterruptionModalProps) {
-  const [answer, setAnswer] = useState('');
+export default function InterruptionModal({
+  personaId,
+  question,
+  onAnswer,
+  onSkip,
+}: InterruptionModalProps) {
+  const [answer, setAnswer] = useState("");
   const persona = PERSONAS.find((p) => p.id === personaId) as Persona;
   const icon = personaIcons[personaId];
 
@@ -45,7 +50,7 @@ export default function InterruptionModal({ personaId, question, onAnswer, onSki
 
         <div className="relative">
           <div className="text-[#1A1510] text-xl md:text-2xl font-[family-name:var(--font-display)] leading-[1.35] tracking-tight">
-            <MarkdownRenderer content={question.replace(/^"|"$/g, '')} />
+            <MarkdownRenderer content={question.replace(/^"|"$/g, "")} />
           </div>
         </div>
 
