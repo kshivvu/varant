@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { MessageSquarePlus, ArrowRight } from 'lucide-react';
+import { useState } from "react";
+import { MessageSquarePlus, ArrowRight } from "lucide-react";
 
 interface InterjectionBarProps {
   onSubmit: (text: string) => void;
@@ -8,13 +8,18 @@ interface InterjectionBarProps {
   submittedText?: string;
 }
 
-export default function InterjectionBar({ onSubmit, disabled, submitted, submittedText }: InterjectionBarProps) {
-  const [text, setText] = useState('');
+export default function InterjectionBar({
+  onSubmit,
+  disabled,
+  submitted,
+  submittedText,
+}: InterjectionBarProps) {
+  const [text, setText] = useState("");
 
   const handleSubmit = () => {
     if (!text.trim() || disabled) return;
     onSubmit(text.trim());
-    setText('');
+    setText("");
   };
 
   if (submitted) {
@@ -26,7 +31,9 @@ export default function InterjectionBar({ onSubmit, disabled, submitted, submitt
               <MessageSquarePlus className="w-4 h-4" />
             </div>
             <div className="flex flex-col gap-0.5">
-              <span className="text-[#1A1510] text-[14px] font-semibold">Your challenge has been recorded.</span>
+              <span className="text-[#1A1510] text-[14px] font-semibold">
+                Your challenge has been recorded.
+              </span>
               <span className="text-[#767676] text-[12px] flex items-center gap-1.5">
                 The Sabha will address it in Khandana
                 <ArrowRight className="w-3 h-3 text-[#9B1C1C]" />
@@ -56,7 +63,7 @@ export default function InterjectionBar({ onSubmit, disabled, submitted, submitt
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+          onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           placeholder="Speak to the Sabha..."
           disabled={disabled}
           className="flex-1 bg-transparent px-4 py-2.5 text-[14px] text-[#1A1510] placeholder:text-[#B8B0A8] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed min-w-0"
