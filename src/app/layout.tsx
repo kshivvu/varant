@@ -34,8 +34,13 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <body>{children}</body>
+      <html lang="en" suppressHydrationWarning>
+        <body
+          suppressHydrationWarning
+          className={`${inter.variable} ${playfair.variable} ${lora.variable} font-[family-name:var(--font-inter)] antialiased bg-[#F5F5F7] text-[#3D3D3D] min-h-screen selection:bg-[#E8711A]/20 selection:text-[#E8711A] relative overflow-x-hidden`}
+        >
+          {children}
+        </body>
       </html>
     </ClerkProvider>
   );

@@ -163,9 +163,9 @@ export async function POST(req: NextRequest) {
       const persona = PERSONAS.find((p) => p.id === personaId);
       const result = await callOpenRouter(
         "google/gemini-2.5-flash-lite",
-        "You are a precise summarizer. Condense the given text into 2 sentences maximum. Keep the voice and perspective of the original speaker. No preamble.",
-        `Summarize this response from ${persona?.name || personaId} in 2 sentences:\n\n${content}`,
-        80,
+        "You are a highly concise, decision-focused summarizer. Distill the given text to the absolute core argument for efficient decision-making. Highlight the main points using **bold text**. Keep the voice and perspective of the original speaker. No preamble.",
+        `Summarize this response from ${persona?.name || personaId} extremely concisely, highlighting the main points in bold to help me decide:\n\n${content}`,
+        100,
       );
       return NextResponse.json({ summary: result.trim() });
     }

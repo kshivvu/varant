@@ -108,6 +108,8 @@ function delay(ms: number) {
 }
 
 export default function CouncilScreen() {
+
+
   const router = useRouter();
   const [question, setQuestion] = useState("");
   const [context, setContext] = useState("");
@@ -448,70 +450,55 @@ export default function CouncilScreen() {
   ]);
 
   const runVerdict = useCallback(async () => {
-    setIsProcessing(true);
-    setCurrentRound(3);
+  setIsProcessing(true);
+  setCurrentRound(3);
 
-    const allPrev = [
-      ...round1Responses
-        .filter((r) => r.content)
-        .map((r) => ({
-          personaId: r.personaId,
-          round: r.round,
-          content: r.content,
-        })),
-      ...round2Responses
-        .filter((r) => r.content)
-        .map((r) => ({
-          personaId: r.personaId,
-          round: r.round,
-          content: r.content,
-        })),
-    ];
-    const combinedInterjection = [interjection, interruptionAnswer]
-      .filter(Boolean)
-      .join("\n\n");
+  const allPrev = [
+    ...round1Responses.filter((r) => r.content).map((r) => ({ personaId: r.personaId, round: r.round, content: r.content })),
+    ...round2Responses.filter((r) => r.content).map((r) => ({ personaId: r.personaId, round: r.round, content: r.content })),
+  ];
+  const combinedInterjection = [interjection, interruptionAnswer].filter(Boolean).join('\n\n');
 
-    try {
-      const data = await callCouncilJSON({
-        type: "verdict",
-        question,
-        context,
-        round: Round.NIRNAYA,
-        previousResponses: allPrev,
-        interjection: combinedInterjection || undefined,
-      });
-      const verdictPayload = {
-        question,
-        context,
-        round1Responses: round1Responses.filter((r) => r.content),
-        round2Responses: round2Responses.filter((r) => r.content),
-        verdictRaw: data.content,
-      };
-      sessionStorage.setItem("Varant_verdict", JSON.stringify(verdictPayload));
+  try {
+    const data = await callCouncilJSON({
+      type: 'verdict',
+      question,
+      context,
+      round: Round.NIRNAYA,
+      previousResponses: allPrev,
+      interjection: combinedInterjection || undefined,
+    });
 
-      // Save to Smriti
-      saveToSmriti({
+    sessionStorage.setItem('Varant_verdict', JSON.stringify({
+      question,
+      context,
+      round1Responses: round1Responses.filter((r) => r.content),
+      round2Responses: round2Responses.filter((r) => r.content),
+      verdictRaw: data.content,
+    }));
+
+    // Save to MongoDB
+    fetch('/api/smriti', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         question,
         context,
         verdictRaw: data.content,
         matraScore: extractMatra(data.content),
         recommendation: extractRecommendation(data.content),
-      });
+        isContinuation: sessionStorage.getItem('Varant_session')
+          ? JSON.parse(sessionStorage.getItem('Varant_session')!).isContinuation || false
+          : false,
+      }),
+    }).catch(console.error);
 
-      router.push("/verdict");
-    } catch (err) {
-      console.error("Verdict error:", err);
-      setIsProcessing(false);
-    }
-  }, [
-    question,
-    context,
-    round1Responses,
-    round2Responses,
-    interjection,
-    interruptionAnswer,
-    router,
-  ]);
+    router.push('/verdict');
+  } catch (err) {
+    console.error('Verdict error:', err);
+    setIsProcessing(false);
+  }
+}, [question, context, round1Responses, round2Responses, interjection, interruptionAnswer, router]);
 
   useEffect(() => {
     if (question && !hasStartedRef.current) {
@@ -541,7 +528,7 @@ export default function CouncilScreen() {
     !round2Complete &&
     currentRound === 1 &&
     (interruptionDismissed || !showInterruption);
-
+  
   return (
     <>
       <div className="fixed inset-0 z-[-2] varant-council-bg" />
