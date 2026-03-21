@@ -48,6 +48,28 @@ interface TeamMessage {
   createdAt: string;
 }
 
+function renderFormattedText(text: string) {
+  // Replace **bold** and *bold* with <strong> tags
+  const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={i} style={{ color: "#1A1510", fontWeight: 600 }}>
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith("*") && part.endsWith("*")) {
+      return (
+        <strong key={i} style={{ color: "#1A1510", fontWeight: 600 }}>
+          {part.slice(1, -1)}
+        </strong>
+      );
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
 interface TeamSession {
   id: string;
   code: string;
@@ -89,6 +111,9 @@ export default function TeamSessionPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [copied, setCopied] = useState(false);
   const [sabhaStarted, setSabhaStarted] = useState(false);
+  const [prashna, setPrashna] = useState("");
+  const [targetVoice, setTargetVoice] = useState<string | null>(null);
+  const [sessionDuration, setSessionDuration] = useState(0);
   const [isPersonaTyping, setIsPersonaTyping] = useState<
     Record<PersonaId, boolean>
   >({
@@ -100,6 +125,30 @@ export default function TeamSessionPage() {
 
   const containerRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Session duration timer
+  useEffect(() => {
+    if (session?.status === "active") {
+      const interval = setInterval(() => {
+        setSessionDuration((prev) => prev + 1);
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [session?.status]);
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
+  const getTensionLabel = (score: number | null) => {
+    if (score === null) return "CALCULATING...";
+    if (score < 30) return "LOW";
+    if (score < 60) return "MODERATE";
+    if (score < 85) return "HIGH";
+    return "CRITICAL";
+  };
 
   console.log("Session state:", session);
   console.log("Persona responses:", personaResponses);
@@ -280,6 +329,131 @@ export default function TeamSessionPage() {
     }
   }, [session?.status, session?.status === "complete" && session?.shastra]);
 
+  const handleRaisePrashna = async () => {
+    if (!prashna.trim() || !myMember || !session) return;
+    const text = prashna.trim();
+    const target = targetVoice;
+    setPrashna("");
+
+    // Log to activity feed
+    await fetch(`/api/team/${code}/message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        memberName: myMember.name,
+        content: target ? `@${target}: ${text}` : text,
+        type: "prashna",
+      }),
+    });
+    fetchSession();
+
+    // Call council API with the prashna
+    try {
+      const response = await fetch("/api/council", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "persona",
+          question: session.decision,
+          context: session.context,
+          prashna: text,
+          targetPersona: target?.toLowerCase() || null,
+          round: Round.KHANDANA,
+          previousResponses: personaResponses,
+        }),
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      // Reset targeted voice(s) to show new response
+      if (target) {
+        const targetId = target.toLowerCase() as PersonaId;
+        setPersonaResponses((prev) => ({ ...prev, [targetId]: "" }));
+        setPersonaStatuses((prev) => ({ ...prev, [targetId]: "speaking" }));
+        setIsPersonaTyping((prev) => ({ ...prev, [targetId]: true }));
+      } else {
+        setPersonaResponses({
+          skeptic: "",
+          optimist: "",
+          pragmatist: "",
+          "devils-advocate": "",
+        });
+        setPersonaStatuses({
+          skeptic: "speaking",
+          optimist: "speaking",
+          pragmatist: "speaking",
+          "devils-advocate": "speaking",
+        });
+        setIsPersonaTyping({
+          skeptic: true,
+          optimist: true,
+          pragmatist: true,
+          "devils-advocate": true,
+        });
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed || !trimmed.startsWith("data: ")) continue;
+
+            try {
+              const data = JSON.parse(trimmed.slice(6));
+              if (data.token) {
+                if (target) {
+                  const targetId = target.toLowerCase() as PersonaId;
+                  setPersonaResponses((prev) => ({
+                    ...prev,
+                    [targetId]: prev[targetId] + data.token,
+                  }));
+                } else if (data.persona) {
+                  const pId = data.persona as PersonaId;
+                  setPersonaResponses((prev) => ({
+                    ...prev,
+                    [pId]: prev[pId] + data.token,
+                  }));
+                }
+              }
+            } catch (e) {}
+          }
+        }
+      }
+
+      // Mark as done
+      if (target) {
+        const targetId = target.toLowerCase() as PersonaId;
+        setPersonaStatuses((prev) => ({ ...prev, [targetId]: "done" }));
+        setIsPersonaTyping((prev) => ({ ...prev, [targetId]: false }));
+      } else {
+        setPersonaStatuses({
+          skeptic: "done",
+          optimist: "done",
+          pragmatist: "done",
+          "devils-advocate": "done",
+        });
+        setIsPersonaTyping({
+          skeptic: false,
+          optimist: false,
+          pragmatist: false,
+          "devils-advocate": false,
+        });
+      }
+      fetchSession();
+    } catch (error) {
+      console.error("Prashna failed:", error);
+    }
+  };
+
   const handleSendMessage = async (content: string) => {
     if (!myMember || !content.trim()) return;
     try {
@@ -360,7 +534,15 @@ export default function TeamSessionPage() {
     : null;
 
   return (
-    <div className="min-h-screen bg-[#FAF9F7] text-[#1A1510] flex overflow-hidden font-sans">
+    <div
+      style={{
+        backgroundImage: `
+        radial-gradient(circle at 20% 50%, rgba(193,127,36,0.03) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(46,91,138,0.04) 0%, transparent 50%)
+      `,
+      }}
+      className="min-h-screen bg-[#FAF9F7] text-[#1A1510] flex overflow-hidden font-sans"
+    >
       {/* LEFT SIDEBAR */}
       <aside className="w-[280px] bg-white border-r border-[#E8E3DC] flex flex-col p-6 shrink-0 shadow-sm relative z-20">
         <div className="border-b border-[#E8E3DC] pb-6 mb-6 flex items-center justify-between">
@@ -379,12 +561,24 @@ export default function TeamSessionPage() {
         </div>
 
         <div className="mb-8 p-4 bg-[#FAF9F7] rounded-xl border border-[#E8E3DC]/50">
-          <span
-            style={{ fontFamily: "var(--font-mono), IBM Plex Mono, monospace" }}
-            className="text-[9px] text-[#767676] uppercase block mb-1 font-bold tracking-widest"
-          >
-            SESSION CODE
-          </span>
+          <div className="flex items-center justify-between mb-1">
+            <span
+              style={{
+                fontFamily: "var(--font-mono), IBM Plex Mono, monospace",
+              }}
+              className="text-[9px] text-[#767676] uppercase font-bold tracking-widest"
+            >
+              SESSION CODE
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-mono), IBM Plex Mono, monospace",
+              }}
+              className="text-[9px] text-[#4A4740] font-medium"
+            >
+              {formatDuration(sessionDuration)}
+            </span>
+          </div>
           <span
             style={{ fontFamily: "var(--font-mono), IBM Plex Mono, monospace" }}
             className="text-[16px] text-[#1A1510] tracking-[0.1em] uppercase font-bold"
@@ -439,7 +633,27 @@ export default function TeamSessionPage() {
         </div>
 
         <div className="mt-auto space-y-6">
-          <TensionMeter score={tensionScore} />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <span
+                style={{
+                  fontFamily: "var(--font-mono), IBM Plex Mono, monospace",
+                }}
+                className="text-[8px] font-bold text-[#767676] uppercase tracking-widest"
+              >
+                SANGHARSHA
+              </span>
+              <span
+                style={{
+                  fontFamily: "var(--font-mono), IBM Plex Mono, monospace",
+                }}
+                className="text-[8px] font-bold text-[#9B1C1C]"
+              >
+                {getTensionLabel(tensionScore)}
+              </span>
+            </div>
+            <TensionMeter score={tensionScore} />
+          </div>
 
           <div className="p-4 bg-white border border-[#E8E3DC] rounded-xl">
             <span
@@ -452,24 +666,46 @@ export default function TeamSessionPage() {
             </span>
             <div className="max-h-[120px] overflow-y-auto scrollbar-hide space-y-3">
               {session.messages
-                .slice(-3)
+                .slice(-5)
                 .reverse()
-                .map((msg) => (
-                  <div key={msg.id} className="text-[11px] leading-snug">
-                    <span className="text-[#9B1C1C] font-bold mr-1">
-                      {msg.memberName}:
-                    </span>
-                    <span
-                      className={
-                        msg.type === "activity"
-                          ? "text-[#767676] italic"
-                          : "text-[#1A1510]"
-                      }
-                    >
-                      {msg.content}
-                    </span>
-                  </div>
-                ))}
+                .map((msg) => {
+                  const member = session.members.find(
+                    (m) => m.name === msg.memberName,
+                  );
+                  const isTargeted = msg.content.includes("@");
+                  const targetMatch = msg.content.match(/@(\w+)/);
+                  const targetName = targetMatch ? targetMatch[1] : null;
+
+                  return (
+                    <div key={msg.id} className="text-[10px] leading-tight">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <div
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{
+                            backgroundColor: member?.color || "#767676",
+                          }}
+                        />
+                        <span
+                          className={`font-bold ${
+                            msg.memberName === myMember?.name
+                              ? "text-[#C17F24]"
+                              : "text-[#1A1510]"
+                          }`}
+                        >
+                          {msg.memberName}
+                        </span>
+                        {targetName && (
+                          <span className="text-[#9B1C1C] font-mono text-[9px]">
+                            → @{targetName}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[#4A4740] line-clamp-2 pl-3 border-l border-[#E8E3DC] ml-0.5">
+                        {msg.content.replace(/@\w+:\s*/, "")}
+                      </p>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>
@@ -477,24 +713,26 @@ export default function TeamSessionPage() {
 
       {/* MAIN CONTENT */}
       <main
-        className="flex-1 flex flex-col relative overflow-y-auto bg-[#FAF9F7]"
+        className="flex-1 flex flex-col relative overflow-y-auto"
         ref={containerRef}
       >
         <div className="sticky top-0 z-40 bg-[#FAF9F7]/80 backdrop-blur-md border-b border-[#E8E3DC] px-8 py-5 flex items-center justify-between">
-          <span
-            style={{
-              fontFamily: "var(--font-mono), IBM Plex Mono, monospace",
-            }}
-            className="text-[10px] text-[#767676] uppercase tracking-[0.2em] font-bold"
-          >
-            {isComplete
-              ? `TEAM SHASTRA · ${session.members.length} MEMBERS`
-              : `SABHA IN SESSION · ${session.members.length} VOICES`}
-          </span>
+          <div className="flex items-center gap-3">
+            <span
+              style={{
+                fontFamily: "var(--font-mono), IBM Plex Mono, monospace",
+              }}
+              className="text-[10px] text-[#767676] uppercase tracking-[0.2em] font-bold"
+            >
+              {isComplete
+                ? `TEAM SHASTRA · ${session.members.length} MEMBERS`
+                : `SABHA IN SESSION · ${session.members.length} VOICES`}
+            </span>
+          </div>
           {!isComplete && (
             <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#9B1C1C] animate-pulse" />
-              <span className="text-[9px] font-bold text-[#9B1C1C] uppercase tracking-widest">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#E53E3E] animate-pulse" />
+              <span className="text-[9px] font-bold text-[#E53E3E] uppercase tracking-widest">
                 Live
               </span>
             </div>
@@ -560,75 +798,117 @@ export default function TeamSessionPage() {
             /* ACTIVE DEBATE VIEW */
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {PERSONAS.map((persona) => (
-                  <div
-                    key={persona.id}
-                    className="chamber-reveal border border-[#E8E3DC] p-10 bg-white relative group shadow-sm rounded-2xl hover:shadow-md transition-all"
-                  >
-                    <div className="flex items-center justify-between mb-8">
-                      <div className="flex items-center gap-4">
-                        <div
-                          className="w-1.5 h-10 rounded-full"
-                          style={{
-                            backgroundColor:
-                              persona.id === "skeptic"
-                                ? "#E53E3E"
-                                : persona.id === "optimist"
-                                  ? "#4A7C59"
-                                  : persona.id === "pragmatist"
-                                    ? "#8B6914"
-                                    : "#2E5B8A",
-                          }}
-                        />
-                        <div>
-                          <h3
-                            style={{
-                              fontFamily:
-                                "var(--font-cormorant), Cormorant, serif",
-                            }}
-                            className="text-[24px] font-[300] text-[#1A1510] leading-none"
-                          >
-                            {persona.name}
-                          </h3>
+                {PERSONAS.map((persona) => {
+                  const isSpeaking =
+                    personaStatuses[persona.id as PersonaId] === "speaking";
+                  const isDone =
+                    personaStatuses[persona.id as PersonaId] === "done";
+                  const hasResponse =
+                    !!personaResponses[persona.id as PersonaId];
+                  const isTargeted = targetVoice?.toLowerCase() === persona.id;
+
+                  return (
+                    <div
+                      key={persona.id}
+                      className={`chamber-reveal border p-10 bg-white relative group shadow-sm rounded-2xl hover:shadow-md transition-all ${
+                        isSpeaking
+                          ? "border-[#C17F24] border-l-[3px] animate-[pulse_1.5s_ease_infinite]"
+                          : "border-[#E8E3DC]"
+                      }`}
+                    >
+                      {isTargeted && (
+                        <div className="absolute top-0 left-0 w-full bg-[#C17F24]/10 border-l-2 border-[#C17F24] py-2 px-10 animate-in fade-in duration-500">
                           <span
                             style={{
                               fontFamily:
                                 "var(--font-mono), IBM Plex Mono, monospace",
                             }}
-                            className="text-[10px] text-[#767676] uppercase tracking-[0.2em] font-bold"
+                            className="text-[8px] text-[#C17F24] font-bold uppercase tracking-widest"
                           >
-                            {persona.sanskrit}
+                            @{persona.name} — RESPONDING TO PRASHNA
                           </span>
                         </div>
+                      )}
+
+                      <div className="flex items-center justify-between mb-8">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className="w-1.5 h-10 rounded-full"
+                            style={{
+                              backgroundColor:
+                                persona.id === "skeptic"
+                                  ? "#E53E3E"
+                                  : persona.id === "optimist"
+                                    ? "#4A7C59"
+                                    : persona.id === "pragmatist"
+                                      ? "#8B6914"
+                                      : "#2E5B8A",
+                            }}
+                          />
+                          <div>
+                            <h3
+                              style={{
+                                fontFamily:
+                                  "var(--font-cormorant), Cormorant, serif",
+                              }}
+                              className="text-[24px] font-[300] text-[#1A1510] leading-none"
+                            >
+                              {persona.name}
+                            </h3>
+                            <span
+                              style={{
+                                fontFamily:
+                                  "var(--font-mono), IBM Plex Mono, monospace",
+                              }}
+                              className="text-[10px] text-[#767676] uppercase tracking-[0.2em] font-bold"
+                            >
+                              {persona.sanskrit}
+                            </span>
+                          </div>
+                        </div>
+                        {isSpeaking && (
+                          <div className="flex items-center gap-2">
+                            <span
+                              style={{
+                                fontFamily:
+                                  "var(--font-mono), IBM Plex Mono, monospace",
+                              }}
+                              className="text-[7px] text-[#C17F24] font-bold uppercase tracking-widest"
+                            >
+                              SPEAKING
+                            </span>
+                            <div className="flex gap-1.5">
+                              <div className="w-1.5 h-1.5 bg-[#C17F24] rounded-full animate-bounce [animation-delay:-0.3s]" />
+                              <div className="w-1.5 h-1.5 bg-[#C17F24] rounded-full animate-bounce [animation-delay:-0.15s]" />
+                              <div className="w-1.5 h-1.5 bg-[#C17F24] rounded-full animate-bounce" />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      {isPersonaTyping[persona.id as PersonaId] && (
-                        <div className="flex gap-1.5">
-                          <div className="w-1.5 h-1.5 bg-[#9B1C1C] rounded-full animate-bounce [animation-delay:-0.3s]" />
-                          <div className="w-1.5 h-1.5 bg-[#9B1C1C] rounded-full animate-bounce [animation-delay:-0.15s]" />
-                          <div className="w-1.5 h-1.5 bg-[#9B1C1C] rounded-full animate-bounce" />
-                        </div>
-                      )}
+                      <div
+                        style={{
+                          fontFamily:
+                            "var(--font-dm-sans), DM Sans, sans-serif",
+                        }}
+                        className="min-h-[160px] text-[15px] text-[#555] leading-relaxed italic border border-[#E8E3DC]/50 p-6 bg-[#FAF9F7]/50 rounded-xl transition-colors group-hover:border-[#9B1C1C]/20"
+                      >
+                        {personaResponses[persona.id as PersonaId] ? (
+                          <div className="not-italic">
+                            {renderFormattedText(
+                              personaResponses[persona.id as PersonaId],
+                            )}
+                          </div>
+                        ) : session.status === "waiting" ? (
+                          "Waiting for the host to convene the Sabha..."
+                        ) : isPersonaTyping[persona.id as PersonaId] ? (
+                          "The voice is interjecting..."
+                        ) : (
+                          "The voice is observing the council..."
+                        )}
+                      </div>
                     </div>
-                    <div
-                      style={{
-                        fontFamily: "var(--font-dm-sans), DM Sans, sans-serif",
-                      }}
-                      className="min-h-[160px] text-[15px] text-[#555] leading-relaxed italic border border-[#E8E3DC]/50 p-6 bg-[#FAF9F7]/50 rounded-xl transition-colors group-hover:border-[#9B1C1C]/20"
-                    >
-                      {personaResponses[persona.id as PersonaId] ? (
-                        <div className="not-italic">
-                          {personaResponses[persona.id as PersonaId]}
-                        </div>
-                      ) : session.status === "waiting" ? (
-                        "Waiting for the host to convene the Sabha..."
-                      ) : isPersonaTyping[persona.id as PersonaId] ? (
-                        "The voice is interjecting..."
-                      ) : (
-                        "The voice is observing the council..."
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Host Control */}
@@ -719,48 +999,163 @@ export default function TeamSessionPage() {
 
         {/* Prashna Bar (only if not complete) */}
         {!isComplete && (
-          <div className="sticky bottom-0 p-10 z-30">
-            <div className="max-w-3xl mx-auto">
-              <div className="bg-white border border-[#E8E3DC] p-1.5 flex items-center shadow-xl rounded-full">
-                <input
-                  type="text"
-                  placeholder="Speak to the Sabha..."
-                  style={{
-                    fontFamily: "var(--font-dm-sans), DM Sans, sans-serif",
-                  }}
-                  className="flex-1 bg-transparent px-8 py-4 text-[15px] text-[#1A1510] focus:outline-none placeholder:text-[#B8B0A8]"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSendMessage(e.currentTarget.value);
-                      e.currentTarget.value = "";
-                    }
-                  }}
-                />
+          <div className="sticky bottom-0 z-50">
+            {/* @mention quick tags — show above input */}
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                marginBottom: 8,
+                padding: "0 24px",
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: "var(--font-mono), IBM Plex Mono, monospace",
+                  fontSize: 9,
+                  color: "#4A4740",
+                  letterSpacing: "0.1em",
+                  alignSelf: "center",
+                }}
+              >
+                SPEAK TO:
+              </span>
+
+              {/* "Sabha" = all voices */}
+              <button
+                onClick={() => setTargetVoice(null)}
+                style={{
+                  fontFamily: "var(--font-mono), IBM Plex Mono, monospace",
+                  fontSize: 9,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  padding: "4px 10px",
+                  cursor: "pointer",
+                  border: "1px solid",
+                  borderColor:
+                    targetVoice === null ? "#C17F24" : "rgba(193,127,36,0.2)",
+                  color: targetVoice === null ? "#C17F24" : "#4A4740",
+                  background:
+                    targetVoice === null
+                      ? "rgba(193,127,36,0.08)"
+                      : "transparent",
+                  borderRadius: 0,
+                }}
+              >
+                @Sabha
+              </button>
+
+              {/* Individual voice tags */}
+              {[
+                { name: "Vitarka", color: "#E53E3E" },
+                { name: "Asha", color: "#4A7C59" },
+                { name: "Yukti", color: "#8B6914" },
+                { name: "Vipaksha", color: "#2E5B8A" },
+              ].map((v) => (
                 <button
-                  onClick={(e) => {
-                    const input = e.currentTarget
-                      .previousElementSibling as HTMLInputElement;
-                    handleSendMessage(input.value);
-                    input.value = "";
-                  }}
+                  key={v.name}
+                  onClick={() => setTargetVoice(v.name)}
                   style={{
                     fontFamily: "var(--font-mono), IBM Plex Mono, monospace",
+                    fontSize: 9,
+                    letterSpacing: "0.1em",
+                    textTransform: "uppercase",
+                    padding: "4px 10px",
+                    cursor: "pointer",
+                    border: "1px solid",
+                    borderColor:
+                      targetVoice === v.name
+                        ? v.color
+                        : "rgba(193,127,36,0.15)",
+                    color: targetVoice === v.name ? v.color : "#4A4740",
+                    background:
+                      targetVoice === v.name ? `${v.color}15` : "transparent",
+                    borderRadius: 0,
                   }}
-                  className="bg-[#1A1510] text-white px-10 py-4 rounded-full text-[11px] font-bold uppercase tracking-widest hover:bg-[#9B1C1C] transition-all"
                 >
-                  RAISE PRASHNA
+                  @{v.name}
                 </button>
-              </div>
-              <div className="mt-4 text-center">
+              ))}
+            </div>
+
+            {/* Input row */}
+            <div
+              style={{
+                display: "flex",
+                gap: 0,
+                borderTop: "1px solid rgba(193,127,36,0.12)",
+                padding: "16px 24px",
+                background: "#FAF9F7", // Match the page background
+              }}
+            >
+              {/* Show selected target as prefix */}
+              {targetVoice && (
                 <span
                   style={{
                     fontFamily: "var(--font-mono), IBM Plex Mono, monospace",
+                    fontSize: 11,
+                    color: "#C17F24",
+                    alignSelf: "center",
+                    marginRight: 8,
+                    whiteSpace: "nowrap",
                   }}
-                  className="text-[9px] text-[#767676] uppercase tracking-[0.25em] font-bold"
                 >
-                  ANY MEMBER CAN INTERJECT AT ANY TIME
+                  @{targetVoice}
                 </span>
-              </div>
+              )}
+
+              <input
+                value={prashna}
+                onChange={(e) => setPrashna(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleRaisePrashna()}
+                placeholder={
+                  targetVoice
+                    ? `Challenge ${targetVoice} directly...`
+                    : "Speak to the Sabha..."
+                }
+                style={{
+                  flex: 1,
+                  background: "transparent",
+                  border: "none",
+                  borderBottom: "1px solid rgba(193,127,36,0.2)",
+                  color: "#1A1510",
+                  fontFamily: "var(--font-dm-sans), DM Sans, sans-serif",
+                  fontSize: 14,
+                  padding: "8px 0",
+                  outline: "none",
+                }}
+              />
+
+              <button
+                onClick={handleRaisePrashna}
+                disabled={!prashna.trim()}
+                style={{
+                  marginLeft: 16,
+                  background: prashna.trim() ? "#C17F24" : "transparent",
+                  border: "1px solid rgba(193,127,36,0.3)",
+                  color: prashna.trim() ? "#FFFFFF" : "#4A4740",
+                  fontFamily: "var(--font-mono), IBM Plex Mono, monospace",
+                  fontSize: 10,
+                  letterSpacing: "0.12em",
+                  textTransform: "uppercase",
+                  padding: "10px 20px",
+                  cursor: prashna.trim() ? "pointer" : "not-allowed",
+                  borderRadius: "9999px",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                RAISE PRASHNA
+              </button>
+            </div>
+            <div className="pb-4 text-center bg-[#FAF9F7]">
+              <span
+                style={{
+                  fontFamily: "var(--font-mono), IBM Plex Mono, monospace",
+                }}
+                className="text-[9px] text-[#767676] uppercase tracking-[0.25em] font-bold"
+              >
+                ANY MEMBER CAN INTERJECT AT ANY TIME
+              </span>
             </div>
           </div>
         )}
